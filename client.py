@@ -1,31 +1,37 @@
 import hashlib
+import random
 import socket
+import time
 
-PACKET_LOSS = False
-FILE = ''
+PACKET_LOSS = True
 HOST = '127.0.0.1'
 PORT = 1234
 BUFFER = 1040
 
+LEFT = random.randrange(16, 1024) #Início de um pacote de dados = 16, fim = 1023
+RIGHT = random.randrange(LEFT + 1, 1024)
+
 def checksum(checksum_data):
-    checksum = checksum_data[:16] # pq 16
+    checksum = checksum_data[:16]
     data = checksum_data[16:]
-    novoChecksum = hashlib.md5(data).digest()
+    new_checksum = hashlib.md5(data).digest()
 
-    return checksum == novoChecksum
+    return checksum == new_checksum
 
 
-bytes = str.encode('GET/ ' + FILE)
+filename = input('Insira o nome do arquivo + extensão \".txt\"\n')
+request = str.encode('GET/' + filename)
+
 receivedFile = ''
-newFile = 'receivedFile.txt'
+newFile = f'receivedFile{str(random.randint(100, 1000))}.txt'
 packets = 0
 
 clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-clientSocket.sendto(bytes, (HOST, PORT))
+clientSocket.sendto(request, (HOST, PORT))
 
 while True:
     checksum_data, address = clientSocket.recvfrom(BUFFER)
-
+   # time.sleep(0.1)
     if not checksum_data:
         print('Arquivo finalizado!')
         break
@@ -35,9 +41,12 @@ while True:
 
     packets += 1
 
+    if PACKET_LOSS and random.randint(1, 4) == 1:
+        checksum_data = checksum_data[:16] + checksum_data[16:LEFT] # + checksum_data[LEFT + 1:RIGHT]
+
     if checksum(checksum_data):
         receivedFile += checksum_data[16:].decode('utf-8')
-        print(f'Pacote {packets} enviado!')
+        print(f'Pacote {packets} recebido!')
         check = 'OK'.encode('utf-8')
     else:
         print(f'Erro de checksum no pacote {packets}. Uma parte do arquivo foi perdida.\nRequisitando reenvio.')

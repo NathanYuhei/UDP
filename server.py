@@ -19,16 +19,19 @@ def sendFile(file, address):
                     check = check[0].decode('utf-8')
                     if check == 'NOK':
                         print('NOK recebido. Reenviando parte do arquivo.')
-    except FileNotFoundError:
-        server_socket.sendto('ERROR File Not Found.'.encode('utf-8'), address)
 
+    except FileNotFoundError:
+        serverSocket.sendto('ERROR File Not Found.'.encode('utf-8'), address)
+    # fil
     print(f'Arquivo {file} enviado em {address}')
     serverSocket.sendto(b'', address)
 
 def getFile(message, address):
     messageUTF = message.decode('utf-8')
 
-    if messageUTF.startswith('GET'):
+    print(f'Endereço IP do cliente {address}\n Mensagem: {message}')
+
+    if messageUTF.startswith('GET/'):
         file = messageUTF[4:]
         sendFile(file, address)
 
@@ -38,10 +41,12 @@ serverSocket.bind((HOST, PORT))
 
 print(f"Server {HOST}:{PORT}")
 
+addresses = []
 
 while True:
     message, address = serverSocket.recvfrom(BUFFER)
-    getFile(message, address)
-    serverSocket.sendto(message, address)
+    if (address not in addresses):
+        addresses.append(address)
+        getFile(message, address)
 
 
